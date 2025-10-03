@@ -7,9 +7,15 @@ const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Servidor backend a correr na porta ${PORT}`);
+});
+
 
 // middlewares globais
-app.use(cors({ origin: 'site-orcamento-five.vercel.app' })); // substitua pelo seu frontend ou use '*' temporariamente
+app.use(cors({
+    origin: 'https://site-orcamento-five.vercel.app'
+}));
 app.use(express.json());
 app.use(express.static('public')); // se tiver assets
 
@@ -160,4 +166,5 @@ app.post('/propostas', authenticateToken, async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor backend a correr na porta ${PORT}`);
+
 });
