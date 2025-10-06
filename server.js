@@ -12,8 +12,15 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Inicializa Supabase
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY); // Usar a chave ANON para auth do cliente
+// ===================================================================================
+// CORREÇÃO APLICADA AQUI
+// ===================================================================================
+// Cliente público (anon) para autenticação (login, registro)
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+
+// Cliente ADMIN (service_role) para operações no banco de dados (usado apenas no servidor)
+const supabaseAdmin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+// ===================================================================================
 
 // MIDDLEWARE DE AUTENTICAÇÃO (JWT) - Sem alterações
 const authenticateToken = (req, res, next) => {
@@ -97,7 +104,8 @@ app.post('/login', async (req, res) => {
     // Usamos o segredo do seu .env para criar um token consistente com o resto da sua aplicação
     const userPayload = { 
         id: data.user.id, 
-        name: data.user.user_metadata.full_name 
+        name: data.user.user_metadata.full_name,
+        email: data.user.email // Adicionando email ao payload
     };
     const appToken = jwt.sign(userPayload, process.env.JWT_SECRET, { expiresIn: '8h' });
 
@@ -110,12 +118,13 @@ app.post('/login', async (req, res) => {
 });
 
 
-// --- ROTAS DE PROPOSTAS (Sem alterações) ---
+// --- ROTAS DE PROPOSTAS (AGORA USAM O CLIENTE ADMIN) ---
 
 app.get('/propostas', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { data, error } = await supabase
+    // ALTERAÇÃO: usa supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from('proposals')
       .select('*')
       .eq('user_id', userId)
@@ -134,7 +143,8 @@ app.post('/propostas', authenticateToken, async (req, res) => {
     const { title, data: proposalData } = req.body; // Renomeado para evitar conflito
     const userId = req.user.id;
 
-    const { data: inserted, error } = await supabase
+    // ALTERAÇÃO: usa supabaseAdmin
+    const { data: inserted, error } = await supabaseAdmin
       .from('proposals')
       .insert([{ user_id: userId, title: title, data: proposalData }])
       .select();
